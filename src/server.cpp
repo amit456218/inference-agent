@@ -20,6 +20,7 @@
 #include "model.h"
 #include "sampler.h"
 #include "tokenizer.h"
+#include "webui.h"
 
 namespace {
 
@@ -218,6 +219,8 @@ struct Server {
             if (req.method == "OPTIONS") {
                 write_all(fd, "HTTP/1.1 204 No Content\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: *\r\n"
                               "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\nConnection: close\r\n\r\n");
+            } else if (req.method == "GET" && (req.path == "/" || req.path == "/index.html")) {
+                respond(fd, 200, "text/html; charset=utf-8", kWebUI);
             } else if (req.method == "GET" && (req.path == "/v1/models" || req.path == "/health")) {
                 Json j = Json::object();
                 j["object"] = "list";
@@ -267,7 +270,7 @@ int cmd_serve(int argc, char** argv) {
     if (inet_pton(AF_INET, host.c_str(), &addr.sin_addr) != 1) throw std::runtime_error("bad --host address");
     if (bind(listener, (sockaddr*)&addr, sizeof addr) != 0) throw std::runtime_error("bind failed on port " + std::to_string(port));
     if (listen(listener, 16) != 0) throw std::runtime_error("listen failed");
-    fprintf(stderr, "serving %s on http://%s:%d/v1/chat/completions (%s backend, ctx %d)\n", server.model_name.c_str(),
+    fprintf(stderr, "serving %s at http://%s:%d/ (chat page) and /v1/chat/completions (%s backend, ctx %d)\n", server.model_name.c_str(),
             host.c_str(), port, server.backend->name(), n_ctx);
     while (true) {
         int fd = accept(listener, nullptr, nullptr);

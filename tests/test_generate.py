@@ -39,7 +39,7 @@ def ref(model, prompt, n):
     return out[:-1] if out.endswith("\n") else out  # llama-simple prints a trailing newline
 
 def ours(model, prompt, n):
-    p = subprocess.run(["./llm", "run", model, "-p", prompt, "-n", str(n)] + extra, capture_output=True)
+    p = subprocess.run(["./ingot", "run", model, "-p", prompt, "-n", str(n)] + extra, capture_output=True)
     out = p.stdout.decode("utf-8", "replace")
     stats = p.stderr.decode("utf-8", "replace").strip().splitlines()
     return out[:-1] if out.endswith("\n") else out, (stats[-1] if stats else "")

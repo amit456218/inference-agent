@@ -1,6 +1,6 @@
 models/
 build/
-llm
+ingot
 *.o
 .DS_Store
 ref/

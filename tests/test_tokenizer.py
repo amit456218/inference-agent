@@ -63,7 +63,7 @@ def show(s):
 fails = 0
 for text in CASES:
     ref, err1 = run(["llama-tokenize", "-m", MODEL, "--stdin", "--ids", "--no-bos", "--no-parse-special", "--no-escape"], text)
-    ours, err2 = run(["./llm", "tokenize", MODEL, "--stdin", "--no-bos"], text)
+    ours, err2 = run(["./ingot", "tokenize", MODEL, "--stdin", "--no-bos"], text)
     if ref is None or ours is None:
         fails += 1
         print("ERROR", show(text), err1 or err2)

@@ -1,4 +1,4 @@
-# From-scratch LLM inference engine for Apple Silicon.
+# Ingot: an LLM inference engine for Apple Silicon, written from scratch in C++20 and Metal.
 # Build: make          (release)
 #        make debug    (asserts, -O0, address sanitizer)
 CXX      := clang++
@@ -8,9 +8,9 @@ SRCS_CPP := $(wildcard src/*.cpp)
 SRCS_MM  := $(wildcard src/*.mm)
 OBJS     := $(SRCS_CPP:src/%.cpp=build/%.o) $(SRCS_MM:src/%.mm=build/%.o)
 
-all: llm
+all: ingot
 
-llm: $(OBJS)
+ingot: $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
 
 build/%.o: src/%.cpp | build
@@ -27,9 +27,9 @@ build:
 
 debug: CXXFLAGS := -std=c++20 -O0 -g -fsanitize=address -Wall -Wextra -Wno-unused-parameter -Isrc -MMD -MP
 debug: LDFLAGS  += -fsanitize=address
-debug: clean llm
+debug: clean ingot
 
 clean:
-	rm -rf build llm
+	rm -rf build ingot
 
 .PHONY: all debug clean
