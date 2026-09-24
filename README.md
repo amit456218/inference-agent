@@ -117,51 +117,38 @@ Every entry point drives the same pipeline. Weights are never copied: the GGUF f
 mmap'd once, and the Metal backend wraps that mapping directly in GPU buffers.
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph Entry["Entry points"]
-        direction TB
         CLI["main.cpp<br/>run · chat · bench"]
-        SRV["server.cpp<br/>OpenAI API + SSE"]
-        UI["webui.cpp<br/>browser chat page"]
-        UI --> SRV
+        SRV["server.cpp + webui.cpp<br/>OpenAI API · SSE · chat page"]
     end
-
     subgraph Glue["Glue"]
-        direction TB
         ENG["engine.cpp<br/>prefill · UTF-8 streaming"]
         CHAT["chat.cpp<br/>Llama 3 template"]
         SAMP["sampler.cpp<br/>temp · top-k · top-p"]
-    end
-
-    subgraph Text["Text"]
         TOK["tokenizer.cpp<br/>byte-level BPE"]
     end
-
     subgraph ModelL["Model"]
-        direction TB
-        GGUF["gguf.cpp<br/>mmap + tensor table"]
-        MODEL["model.cpp<br/>config + weight refs"]
-        GGUF --> MODEL
+        GGUF["gguf.cpp<br/>mmap · tensor table"]
+        MODEL["model.cpp<br/>config · weight refs"]
     end
-
     subgraph Compute["Compute"]
-        direction TB
         BE["backend.h<br/>forward · forward_batch"]
-        CPU["cpu_backend.cpp<br/>f32 reference · GCD"]
-        MTL["metal_backend.mm<br/>+ kernels.metal"]
-        BE --> CPU
-        BE --> MTL
+        CPU["cpu_backend.cpp + ops.cpp<br/>f32 reference · GCD"]
+        MTL["metal_backend.mm + kernels.metal<br/>GPU path"]
     end
-
     CLI --> ENG
     SRV --> ENG
     CLI --> CHAT
     SRV --> CHAT
     CHAT --> TOK
-    ENG --> BE
     ENG --> SAMP
-    TOK --> GGUF
+    ENG --> BE
+    GGUF --> MODEL
+    GGUF -.->|vocab| TOK
     MODEL --> BE
+    BE --> CPU
+    BE --> MTL
 ```
 
 The flow for one request:
