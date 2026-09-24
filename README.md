@@ -155,13 +155,9 @@ The flow for one request:
 
 ```mermaid
 flowchart LR
-    P["prompt text"] --> T["tokenize"]
-    T --> PF["prefill<br/>forward_batch in chunks of --batch"]
-    PF --> S["sample"]
-    S --> D["decode<br/>forward one token"]
+    T["tokenize"] --> PF["prefill<br/>forward_batch"] --> S["sample"] --> D["decode<br/>forward, one token"]
     D --> S
     S --> DT["detokenize<br/>UTF-8 safe"]
-    DT --> O["streamed text"]
 ```
 
 **Prefill** pushes the whole prompt through `forward_batch` in chunks. **Decode** then
@@ -206,17 +202,25 @@ For `n` tokens at positions `pos .. pos+n-1`, the Metal backend does:
 4. `waitUntilCompleted`, then the logits buffer is returned by pointer. Shared storage
    mode means the CPU reads it without a copy.
 
+*Attention block:*
+
 ```mermaid
 flowchart LR
     X0(["x"]) --> N1["rmsnorm"]
-    N1 --> WQ["wq"] --> RQ["rope"] --> ATT["attention<br/>flash · f16 KV cache"]
+    N1 --> WQ["wq"] --> RQ["rope"] --> ATT["attention<br/>flash, f16 KV cache"]
     N1 --> WK["wk"] --> RK["rope_k_to_cache"] --> KC[("K cache")] --> ATT
     N1 --> WV["wv"] --> VC[("V cache")] --> ATT
-    ATT --> WO["wo  (+= x)"] --> X1(["x"])
-    X1 --> N2["rmsnorm"]
+    ATT --> WO["wo (+= x)"] --> X1(["x"])
+```
+
+*Feed-forward block:*
+
+```mermaid
+flowchart LR
+    X1(["x"]) --> N2["rmsnorm"]
     N2 --> WG["w_gate"] --> SM["silu_mul"]
     N2 --> WU["w_up"] --> SM
-    SM --> WD["w_down  (+= x)"] --> X2(["x → next layer"])
+    SM --> WD["w_down (+= x)"] --> X2(["x, next layer"])
 ```
 
 The KV cache is f16, laid out `[n_layer][n_ctx][n_head_kv × head_dim]`. K is rotated and
